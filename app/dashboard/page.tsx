@@ -119,28 +119,28 @@ export default function DashboardPage() {
 
             <div className="bg-[#07111d] border border-cyan-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Wallet Balance</p>
-              <h1 className="text-3xl md:text-5xl font-black text-cyan-400 mt-4">
+              <h1 className="text-3xl md:text-3xl md:text-5xl font-black text-cyan-400 mt-4">
                 ${userData?.balance || 0}
               </h1>
             </div>
 
             <div className="bg-[#07111d] border border-green-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Total Profit</p>
-              <h1 className="text-5xl font-black text-green-400 mt-4">
+              <h1 className="text-3xl md:text-5xl font-black text-green-400 mt-4">
                 +$2,450
               </h1>
             </div>
 
             <div className="bg-[#07111d] border border-yellow-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Open Trades</p>
-              <h1 className="text-3xl md:text-5xl font-black text-yellow-400 mt-4">
+              <h1 className="text-3xl md:text-3xl md:text-5xl font-black text-yellow-400 mt-4">
                 12
               </h1>
             </div>
 
             <div className="bg-[#07111d] border border-pink-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Referral Bonus</p>
-              <h1 className="text-5xl font-black text-pink-400 mt-4">
+              <h1 className="text-3xl md:text-5xl font-black text-pink-400 mt-4">
                 $540
               </h1>
             </div>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
                 <div>
 
-                  <h1 className="text-3xl md:text-5xl font-black text-cyan-400">
+                  <h1 className="text-3xl text-3xl md:text-5xl font-black text-cyan-400">
                     BTC/USDT
                   </h1>
 
@@ -349,21 +349,21 @@ export default function DashboardPage() {
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Wallet Balance</p>
-                    <h1 className="text-5xl font-black text-cyan-400 mt-3">
+                    <h1 className="text-3xl md:text-5xl font-black text-cyan-400 mt-3">
                       ${userData?.balance || 0}
                     </h1>
                   </div>
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Open Positions</p>
-                    <h1 className="text-5xl font-black text-green-400 mt-3">
+                    <h1 className="text-3xl md:text-5xl font-black text-green-400 mt-3">
                       12 Trades
                     </h1>
                   </div>
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Today's PnL</p>
-                    <h1 className="text-5xl font-black text-green-400 mt-3">
+                    <h1 className="text-3xl md:text-5xl font-black text-green-400 mt-3">
                       +$2,450
                     </h1>
                   </div>
