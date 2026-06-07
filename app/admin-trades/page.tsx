@@ -12,8 +12,8 @@ export default function AdminTradesPage() {
       JSON.parse(
         localStorage.getItem("transactions") || "[]"
       )
-
-    console.log("ADMIN TRADES:", savedTrades)
+      
+console.log("ADMIN TRADES DATA", savedTrades)
 
     setTrades(savedTrades)
 
