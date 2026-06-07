@@ -10,7 +10,7 @@ export default function AdminTradesPage() {
 
     const savedTrades =
       JSON.parse(
-        localStorage.getItem("tradeHistory") || "[]"
+        localStorage.getItem("transactions") || "[]"
       )
 
     console.log("ADMIN TRADES:", savedTrades)
