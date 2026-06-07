@@ -115,11 +115,11 @@ export default function DashboardPage() {
 
         <div className="p-8">
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
 
             <div className="bg-[#07111d] border border-cyan-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Wallet Balance</p>
-              <h1 className="text-5xl font-black text-cyan-400 mt-4">
+              <h1 className="text-3xl md:text-5xl font-black text-cyan-400 mt-4">
                 ${userData?.balance || 0}
               </h1>
             </div>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
             <div className="bg-[#07111d] border border-yellow-500/20 rounded-[30px] p-6">
               <p className="text-gray-400">Open Trades</p>
-              <h1 className="text-5xl font-black text-yellow-400 mt-4">
+              <h1 className="text-3xl md:text-5xl font-black text-yellow-400 mt-4">
                 12
               </h1>
             </div>
