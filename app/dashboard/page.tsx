@@ -349,21 +349,21 @@ export default function DashboardPage() {
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Wallet Balance</p>
-                    <h1 className="text-3xl md:text-5xl font-black text-cyan-400 mt-3">
+                    <h1 className="text-2xl md:text-4xl font-black text-cyan-400 mt-3">
                       ${userData?.balance || 0}
                     </h1>
                   </div>
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Open Positions</p>
-                    <h1 className="text-3xl md:text-5xl font-black text-green-400 mt-3">
+                    <h1 className="text-2xl md:text-4xl font-black text-green-400 mt-3">
                       12 Trades
                     </h1>
                   </div>
 
                   <div className="bg-black rounded-2xl p-5">
                     <p className="text-gray-400">Today's PnL</p>
-                    <h1 className="text-3xl md:text-5xl font-black text-green-400 mt-3">
+                    <h1 className="text-2xl md:text-4xl font-black text-green-400 mt-3">
                       +$2,450
                     </h1>
                   </div>
