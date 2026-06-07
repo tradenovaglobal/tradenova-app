@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
           <button
             onClick={logout}
-            className="px-6 py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-black shadow-[0_0_25px_#ff000088]"
+            className="px-6 py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-blackshadow-[0_0_40px_#00ffff]"
           >
             Logout
           </button>

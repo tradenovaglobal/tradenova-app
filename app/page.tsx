@@ -52,7 +52,8 @@ const handleLogin = async () => {
        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-4 md:py-5 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-cyan-400 flex items-center justify-center text-black font-bold text-xl shadow-[0_0_30px_#00ffff]">
+            <div className="w-12 h-12 rounded-xl bg-cyan-400 flex items-center justify-center text-black font-bold text-xl 
+            ">
               ₿
             </div>
 
@@ -85,7 +86,7 @@ const handleLogin = async () => {
 
             <button
               onClick={() => setShowRegister(true)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold shadow-[0_0_30px_#00ffff]"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold"
             >
               Sign Up
             </button>
@@ -129,7 +130,7 @@ const handleLogin = async () => {
 
         <div>
 
-          <div className="inline-flex items-center gap-2 border border-cyan-500/30 rounded-full px-6 py-3 text-cyan-300 bg-cyan-500/5 mb-8 shadow-[0_0_30px_rgba(0,255,255,0.2)]">
+          <div className="inline-flex items-center gap-2 border border-cyan-500/30 rounded-full px-6 py-3 text-cyan-300 bg-cyan-500/5 mb-8">
             🚀 Trusted by 12M+ Traders Worldwide
           </div>
 
@@ -154,7 +155,7 @@ const handleLogin = async () => {
 
             <button
               onClick={() => setShowRegister(true)}
-              className="px-10 py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold text-xl shadow-[0_0_40px_#00ffff]"
+              className="px-10 py-5 rounded-2xl bg-cyan-500 text-black font-bold text-xl"
             >
               Start Trading
             </button>
@@ -207,7 +208,7 @@ const handleLogin = async () => {
 
           <div className="absolute inset-0 bg-cyan-500/10 blur-3xl rounded-full"></div>
 
-          <div className="relative bg-[#07111d]/95 border border-cyan-500/20 rounded-[40px] p-8 shadow-[0_0_60px_rgba(0,255,255,0.15)]">
+          <div className="relative bg-[#07111d]/95 border border-cyan-500/20 rounded-[40px] p-8">
 
             <div className="flex justify-between items-center mb-6">
 
@@ -244,7 +245,7 @@ const handleLogin = async () => {
               {[40, 60, 55, 80, 72, 95, 88, 100].map((h, i) => (
                 <div
                   key={i}
-                  className="w-14 rounded-t-3xl bg-gradient-to-t from-cyan-500 to-cyan-300 shadow-[0_0_30px_#00ffff] animate-pulse"
+                  className="w-14 rounded-t-3xl bg-gradient-to-t from-cyan-500 to-cyan-300  animate-pulse"
                   style={{ height: `${h}%` }}
                 />
               ))}
