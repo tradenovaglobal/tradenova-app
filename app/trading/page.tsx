@@ -74,6 +74,8 @@ const handleBuy = () => {
     createdAt: new Date().toISOString()
   })
 
+  console.log("NEW TRADE", transactions)
+  
   localStorage.setItem(
     "transactions",
     JSON.stringify(transactions)
