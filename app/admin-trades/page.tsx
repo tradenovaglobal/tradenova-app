@@ -12,8 +12,17 @@ export default function AdminTradesPage() {
       JSON.parse(
         localStorage.getItem("transactions") || "[]"
       )
-      
+
 console.log("ADMIN TRADES DATA", savedTrades)
+
+window.addEventListener("storage", () => {
+  const latestTrades =
+    JSON.parse(
+      localStorage.getItem("transactions") || "[]"
+    )
+
+  setTrades(latestTrades)
+})
 
     setTrades(savedTrades)
 
@@ -35,10 +44,10 @@ console.log("ADMIN TRADES DATA", savedTrades)
         ? "+12.50"
         : "-8.50"
 
-    localStorage.setItem(
-      "tradeHistory",
-      JSON.stringify(updatedTrades)
-    )
+ localStorage.setItem(
+  "transactions",
+  JSON.stringify(updatedTrades)
+)
 
     setTrades(updatedTrades)
 
