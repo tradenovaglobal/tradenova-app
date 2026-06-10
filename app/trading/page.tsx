@@ -1,493 +1,277 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "../lib/firebase"
 
 const coins = [
-  ["BTC/USDT", "73,313.0", "-2.62%"],
-  ["ETH/USDT", "3,520.6", "+2.81%"],
-  ["SOL/USDT", "144.25", "+5.45%"],
-
-  ["XRP/USDT", "2.4201", "+1.62%"],
-  ["DOGE/USDT", "0.2201", "-0.81%"],
+  { pair: "BTC/USDT", price: "$73,313", change: "-2.62%" },
+  { pair: "ETH/USDT", price: "$3,520", change: "+2.81%" },
+  { pair: "SOL/USDT", price: "$144", change: "+5.45%" },
+  { pair: "XRP/USDT", price: "$2.42", change: "+1.62%" },
+  { pair: "DOGE/USDT", price: "$0.22", change: "-0.81%" },
 ]
 
-const candles = [
-  [120, 220, true],
-  [220, 160, false],
-  [160, 300, true],
-  [300, 260, false],
-  [260, 340, true],
-  [340, 290, false],
-  [290, 420, true],
-  [420, 380, false],
-  [380, 460, true],
-  [460, 410, false],
-  [410, 480, true],
-  [480, 430, false],
-  [430, 520, true],
-  [520, 470, false],
-  [470, 560, true],
-]
+const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"]
 
-export default function TradingPage() { 
-  const router = useRouter()
- const [price, setPrice] = useState(73313)
+export default function TradingPage() {
+  const [userData, setUserData] = useState<any>(null)
+  const [price, setPrice] = useState(73313)
+  const [activeTimeframe, setActiveTimeframe] = useState("1H")
+  
+  // Trade Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [tradeAmount, setTradeAmount] = useState("")
+  const [tradeTime, setTradeTime] = useState(60)
+  const [tradeDirection, setTradeDirection] = useState<"BUY" | "SELL">("BUY")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
 
-useEffect(() => {
+  // Fetch User Data
+  useEffect(() => {
+    const loadUser = async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}")
+      if (!user.email) return
+      const ref = doc(db, "users", user.email)
+      const snap = await getDoc(ref)
+      if (snap.exists()) setUserData(snap.data())
+    }
+    loadUser()
+  }, [])
 
-  const interval = setInterval(() => {
+  // Live Price Simulation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPrice(prev => {
+        const change = Math.random() * 100 - 50
+        return Number((prev + change).toFixed(2))
+      })
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
-    setPrice(prev => {
+  // Open Modal Function
+  const openTradeModal = (dir: "BUY" | "SELL") => {
+    setTradeDirection(dir)
+    setIsModalOpen(true)
+  }
 
-      const change = Math.random() * 100 - 50
+  // Execute Trade Function
+  const executeTrade = () => {
+    if (!tradeAmount || Number(tradeAmount) <= 0) {
+      setToast({ message: "Please enter a valid amount!", type: "error" })
+      return
+    }
 
-      return Number((prev + change).toFixed(2))
+    setIsSubmitting(true)
+    const user = JSON.parse(localStorage.getItem("user") || "{}")
+    const transactions = JSON.parse(localStorage.getItem("transactions") || "[]")
 
+    transactions.push({
+      id: Date.now(),
+      coin: "BTC/USDT",
+      amount: Number(tradeAmount),
+      direction: tradeDirection,
+      entryPrice: price,
+      profit: "$0.00",
+      adminResult: "PENDING", // Admin will decide
+      status: "Active",
+      email: user.email || "",
+      timestamp: new Date().toISOString()
     })
 
-  }, 3000)
-
-  return () => clearInterval(interval)
-
-}, [])
-const [walletBalance, setWalletBalance] = useState(12450)
-const [showTradeBox, setShowTradeBox] = useState(false)
-const [tradeAmount, setTradeAmount] = useState("")
-const [tradeTime, setTradeTime] = useState(60)
-const handleBuy = () => {
-
-  const transactions =
-    JSON.parse(
-      localStorage.getItem("transactions") || "[]"
-    )
-
-  transactions.push({
-    type: "BUY",
-    coin: "BTC/USDT",
-    amount: Number(tradeAmount),
-    entryPrice: price,
-    currentPrice: price,
-    profit: 0,
-    adminResult: "PENDING",
-    status: "OPEN",
-    createdAt: new Date().toISOString()
-  })
-
-  console.log("NEW TRADE", transactions)
-  
-  localStorage.setItem(
-    "transactions",
-    JSON.stringify(transactions)
-  )
-
-  localStorage.setItem(
-    "tradeHistory",
-    JSON.stringify(transactions)
-  )
-
-  localStorage.setItem(
-    "tradeAmount",
-    tradeAmount
-  )
-
-  localStorage.setItem(
-    "entryPrice",
-    price.toString()
-  )
-
-  localStorage.setItem(
-    "buyTime",
-    new Date().toLocaleString()
-  )
-
-  setWalletBalance(
-    walletBalance - Number(tradeAmount)
-  )
-
-  alert("Trade Opened Successfully")
-
-  router.push("/trade-live")
-}
-
-const handleSell = () => {
-
-  const transactions =
-    JSON.parse(
-      localStorage.getItem("transactions") || "[]"
-    )
-
-transactions.push({
-  type: "SELL",
-  coin: "BTC/USDT",
-  amount: Number(tradeAmount),
-  entryPrice: price,
-  currentPrice: price,
-  profit: 0,
-    adminResult: "live",
-  status: "CLOSED",
-  createdAt: new Date().toISOString()
-})
-  localStorage.setItem(
-    "transactions",
-    JSON.stringify(transactions)
-  )
-
-setWalletBalance(
-  walletBalance + Number(tradeAmount)
-)
-
-  alert("Sell Order Executed")
-}
+    localStorage.setItem("transactions", JSON.stringify(transactions))
+    
+    setTimeout(() => {
+      setIsSubmitting(false)
+      setIsModalOpen(false)
+      setTradeAmount("")
+      setToast({ message: `${tradeDirection} order placed successfully!`, type: "success" })
+    }, 1000)
+  }
 
   return (
+    <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] font-sans">
+      
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 animate-slide-in ${
+          toast.type === "success" ? "bg-green-900/90 border-green-500/50 text-green-200" : "bg-red-900/90 border-red-500/50 text-red-200"
+        }`}>
+          <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
+          <span className="font-semibold">{toast.message}</span>
+        </div>
+      )}
 
-    <main className="min-h-screen bg-black text-white p-5">
-
-      <div className="grid lg:grid-cols-[1fr_360px] gap-5">
-
-        <div className="bg-[#050b16] border border-cyan-500/20 rounded-[35px] overflow-hidden">
-
-          <div className="p-6 border-b border-cyan-500/10">
-
-            <div className="flex items-center justify-between">
+      {/* Trade Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-[#2B3139] flex justify-between items-center bg-[#0B0E11]">
+              <h3 className="text-lg font-bold text-white">{tradeDirection === "BUY" ? "▲ Buy Long" : "▼ Sell Short"}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-[#848E9C] hover:text-white text-xl">✕</button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs text-[#848E9C] uppercase tracking-wider block mb-2">Price</label>
+                <input type="text" value={`$ ${price.toFixed(2)}`} readOnly className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-lg p-3 text-white text-sm font-mono outline-none" />
+              </div>
+              
+              <div>
+                <label className="text-xs text-[#848E9C] uppercase tracking-wider block mb-2">Amount (USDT)</label>
+                <input 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={tradeAmount}
+                  onChange={(e) => setTradeAmount(e.target.value)}
+                  className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-lg p-3 text-white text-sm font-mono outline-none focus:border-[#FCD535] transition-colors" 
+                />
+              </div>
 
               <div>
-
-                <h1 className="text-5xl font-black text-cyan-400">
-                  BTC/USDT
-                </h1>
-
-                <div className="flex items-center gap-4 mt-3">
-
-                  <p className="text-4xl font-black text-white">
-                   {price}
-                  </p>
-
-                  <p className="text-red-500 text-2xl font-bold">
-                    -1,974.0 (-2.62%)
-                  </p>
-
-                </div>
-
-              </div>
-
-              <div className="bg-green-500/20 text-green-400 px-5 py-2 rounded-full">
-                LIVE
-              </div>
-
-            </div>
-
-            <div className="flex gap-4 mt-6 text-lg">
-
-              {["1m","5m","15m","30m","1H","4H","1D","1W","1M"].map((time) => (
-
-                <button
-                  key={time}
-                  className={`
-                    px-4 py-2 rounded-xl
-                    ${time === "1D"
-                      ? "bg-cyan-500 text-black font-bold"
-                      : "bg-black text-white"}
-                  `}
-                >
-                  {time}
-                </button>
-
-              ))}
-
-            </div>
-
-          </div>
-
-          <div className="relative h-[700px] bg-[#020817] overflow-hidden">
-
-            <div className="absolute inset-0">
-
-              {[...Array(16)].map((_, i) => (
-
-                <div
-                  key={i}
-                  className="absolute w-full border-t border-white/5"
-                  style={{ top: `${i * 45}px` }}
-                />
-
-              ))}
-
-              {[...Array(18)].map((_, i) => (
-
-                <div
-                  key={i}
-                  className="absolute h-full border-l border-white/5"
-                  style={{ left: `${i * 70}px` }}
-                />
-
-              ))}
-
-            </div>
-
-            <div className="relative z-10 flex items-end h-full gap-3 px-6 pb-16">
-
-              {candles.map((candle, i) => {
-
-                const open = candle[0] as number
-                const close = candle[1] as number
-                const green = candle[2] as boolean
-
-                return (
-
-                  <div
-                    key={i}
-                    className="flex flex-col items-center flex-1 relative"
-                  >
-
-                    <div
-                      className={`
-                        w-[2px]
-                        absolute
-                        bg-white
-                        opacity-70
-                      `}
-                      style={{
-                        height: `${Math.max(open, close) + 60}px`,
-                        bottom: `${Math.min(open, close) - 30}px`
-                      }}
-                    />
-
-                    <div
-                      className={`
-                        w-full
-                        rounded-sm
-                        shadow-lg
-                        ${green
-                          ? "bg-green-500 shadow-green-500/40"
-                          : "bg-red-500 shadow-red-500/40"}
-                      `}
-                      style={{
-                        height: `${Math.abs(close - open)}px`,
-                        marginBottom: `${Math.min(open, close)}px`
-                      }}
-                    />
-
-                  </div>
-
-                )
-
-              })}
-
-            </div>
-
-            <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#050b16] to-transparent" />
-
-          </div>
-
-          <div className="grid grid-cols-2 gap-5 p-6 border-t border-cyan-500/10">
-
-<button
-  onClick={() => setShowTradeBox(true)}
-  className="p-6 rounded-2xl bg-green-500 text-black text-3xl font-black shadow-[0_0_35px_#00ff00] hover:scale-105 duration-300"
->
-  BUY
-</button>
-
-<button
-  onClick={() => setShowTradeBox(true)}
-  className="p-6 rounded-2xl bg-red-500 text-white text-3xl font-black"
->
-  SELL
-</button>
-
-          </div>
-
-        </div>
-
-        <div className="space-y-5">
-
-          <div className="bg-[#050b16] border border-cyan-500/20 rounded-[35px] p-5">
-
-            <h1 className="text-4xl font-black mb-6">
-              Live Market
-            </h1>
-
-            <div className="space-y-4">
-
-              {coins.map((coin, i) => (
-
-                <div
-                  key={i}
-                  className="bg-black rounded-2xl p-5 flex justify-between items-center border border-white/5"
-                >
-
-                  <div>
-
-                    <h1 className="text-2xl font-black">
-                      {coin[0]}
-                    </h1>
-
-                    <p className="text-gray-500">
-                      Live Pair
-                    </p>
-
-                  </div>
-
-                  <div className="text-right">
-
-                    <p className="text-2xl font-black">
-                      {coin[1]}
-                    </p>
-
-                    <p
-                      className={
-                        coin[2].includes("-")
-                          ? "text-red-500"
-                          : "text-green-400"
-                      }
+                <label className="text-xs text-[#848E9C] uppercase tracking-wider block mb-2">Duration</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[60, 90, 120, 180, 300].map(t => (
+                    <button 
+                      key={t} 
+                      onClick={() => setTradeTime(t)}
+                      className={`py-2 rounded text-xs font-bold transition-colors ${
+                        tradeTime === t ? "bg-[#FCD535] text-black" : "bg-[#0B0E11] text-[#848E9C] border border-[#2B3139] hover:border-[#FCD535]"
+                      }`}
                     >
-                      {coin[2]}
-                    </p>
-
-                  </div>
-
+                      {t}s
+                    </button>
+                  ))}
                 </div>
+              </div>
 
+              <button 
+                onClick={executeTrade}
+                disabled={isSubmitting}
+                className={`w-full py-4 rounded-lg font-bold text-base transition-all flex items-center justify-center gap-2 mt-2 ${
+                  isSubmitting ? "bg-[#2B3139] text-[#848E9C] cursor-not-allowed" : 
+                  tradeDirection === "BUY" ? "bg-[#0ECB81] text-black hover:bg-opacity-90" : "bg-[#F6465D] text-white hover:bg-opacity-90"
+                }`}
+              >
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-[#848E9C]/30 border-t-[#848E9C] rounded-full animate-spin"></div>
+                ) : (
+                  `${tradeDirection} BTC/USDT`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Layout */}
+      <div className="grid lg:grid-cols-[1fr_360px] h-screen">
+        
+        {/* Left: Chart Area */}
+        <div className="flex flex-col border-r border-[#1E2329] overflow-y-auto">
+          
+          {/* Header & Timeframes */}
+          <div className="p-4 border-b border-[#1E2329] bg-[#0B0E11]">
+            <div className="flex flex-wrap items-center gap-4 mb-3">
+              <h2 className="text-xl font-bold text-white">BTC/USDT</h2>
+              <span className="text-[#F6465D] text-xl font-mono font-bold">${price.toFixed(2)}</span>
+            </div>
+            <div className="flex gap-1">
+              {timeframes.map((tf) => (
+                <button 
+                  key={tf} 
+                  onClick={() => setActiveTimeframe(tf)}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                    activeTimeframe === tf ? "bg-[#2B3139] text-[#FCD535]" : "text-[#848E9C] hover:bg-[#1E2329]"
+                  }`}
+                >
+                  {tf}
+                </button>
               ))}
-
             </div>
-
           </div>
 
-          <div className="bg-[#050b16] border border-yellow-500/20 rounded-[35px] p-5">
-
-            <h1 className="text-4xl font-black text-yellow-400 mb-6">
-              Portfolio
-            </h1>
-
-            <div className="space-y-4">
-
-              <div className="bg-black rounded-2xl p-5">
-
-                <p className="text-gray-400">
-                  Wallet Balance
-                </p>
-
-                <h1 className="text-5xl font-black text-cyan-400 mt-3">
-                 ${walletBalance}
-                </h1>
-
-              </div>
-
-              <div className="bg-black rounded-2xl p-5">
-
-                <p className="text-gray-400">
-                  Open Positions
-                </p>
-
-                <h1 className="text-5xl font-black text-green-400 mt-3">
-                  12 Trades
-                </h1>
-
-              </div>
-
-              <div className="bg-black rounded-2xl p-5">
-
-                <p className="text-gray-400">
-                  Today's PnL
-                </p>
-
-                <h1 className="text-5xl font-black text-green-400 mt-3">
-                  +$2,450
-                </h1>
-
-              </div>
-
-            </div>
-
+          {/* Fake Candlestick Chart */}
+          <div className="flex-1 bg-[#0B0E11] relative p-4 min-h-[400px]">
+             {/* Background Grid */}
+             <div className="absolute inset-0">
+                {[...Array(10)].map((_, i) => <div key={i} className="absolute w-full border-t border-[#1E2329]" style={{ top: `${i * 10}%` }} />)}
+             </div>
+             {/* Chart placeholder visual */}
+             <div className="relative z-10 flex items-end h-full gap-2">
+                {[40, 60, 30, 80, 50, 90, 60, 75, 45, 85, 55, 95, 40, 70].map((h, i) => (
+                   <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                      <div className={`w-full rounded-sm ${i % 2 === 0 ? 'bg-[#0ECB81]' : 'bg-[#F6465D]'}`} style={{ height: `${h}%` }}></div>
+                   </div>
+                ))}
+             </div>
           </div>
 
+          {/* BUY / SELL Buttons */}
+          <div className="grid grid-cols-2 gap-3 p-4 border-t border-[#1E2329] bg-[#0B0E11]">
+            <button 
+              onClick={() => openTradeModal("BUY")}
+              className="py-4 rounded-lg bg-[#0ECB81] text-black font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95"
+            >
+              BUY / LONG
+            </button>
+            <button 
+              onClick={() => openTradeModal("SELL")}
+              className="py-4 rounded-lg bg-[#F6465D] text-white font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95"
+            >
+              SELL / SHORT
+            </button>
+          </div>
         </div>
 
+        {/* Right: Markets & Portfolio */}
+        <div className="bg-[#0B0E11] flex flex-col overflow-y-auto hidden lg:flex">
+          
+          <div className="p-4 border-b border-[#1E2329]">
+            <h3 className="text-sm font-bold text-[#848E9C] mb-3 uppercase tracking-wider">Markets</h3>
+            <div className="space-y-2">
+              {coins.map((coin) => (
+                <div key={coin.pair} className="flex items-center justify-between p-2 rounded hover:bg-[#1E2329] transition-colors cursor-pointer">
+                  <div>
+                    <p className="text-sm font-bold text-white">{coin.pair}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono font-bold text-white">{coin.price}</p>
+                    <p className={`text-xs font-mono font-medium ${coin.change.includes("-") ? "text-[#F6465D]" : "text-[#0ECB81]"}`}>
+                      {coin.change}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 flex-1">
+            <h3 className="text-sm font-bold text-[#848E9C] mb-3 uppercase tracking-wider">Account</h3>
+            <div className="space-y-3">
+              <div className="bg-[#1E2329] p-3 rounded-lg border border-[#2B3139]">
+                <p className="text-[#848E9C] text-xs">Wallet Balance</p>
+                <p className="text-lg font-bold text-[#FCD535]">${userData?.balance?.toFixed(2) || "0.00"}</p>
+              </div>
+              <div className="bg-[#1E2329] p-3 rounded-lg border border-[#2B3139]">
+                <p className="text-[#848E9C] text-xs">Today's PnL</p>
+                <p className="text-lg font-bold text-[#0ECB81]">+$2,450.00</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-{showTradeBox && (
-<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-
-<div className="bg-[#07111d] p-8 rounded-3xl w-[400px]">
-
-<h2 className="text-2xl font-bold mb-4">
-Open Trade
-</h2>
-
-<input
-type="number"
-placeholder="Enter Amount"
-value={tradeAmount}
-onChange={(e)=>setTradeAmount(e.target.value)}
-className="w-full p-3 bg-black rounded-xl mb-4"
-/>
-
-<select
-value={tradeTime}
-onChange={(e)=>setTradeTime(Number(e.target.value))}
-className="w-full p-3 bg-black rounded-xl mb-4"
->
-<option value={60}>60 Sec</option>
-<option value={90}>90 Sec</option>
-<option value={120}>120 Sec</option>
-<option value={180}>180 Sec</option>
-<option value={220}>220 Sec</option>
-</select>
-
-<div className="flex gap-3">
-
-<button
-onClick={handleBuy}
-className="flex-1 bg-green-500 p-3 rounded-xl text-black font-bold"
->
-BUY
-</button>
-
-<button
-onClick={handleSell}
-className="flex-1 bg-red-500 p-3 rounded-xl text-white font-bold"
->
-SELL
-</button>
-
-</div>
-
-</div>
-<div className="mt-10 bg-[#050b16] border border-cyan-500/20 rounded-[35px] p-6">
-
-  <h1 className="text-3xl font-black text-cyan-400 mb-5">
-    Open Trades
-  </h1>
-
-  <div className="bg-black p-5 rounded-2xl">
-
-    <p>Coin: BTC/USDT</p>
-
-    <p>Amount: ${tradeAmount || 0}</p>
-
-    <p>Entry Price: {price}</p>
-
-    <p>Current Price: {price}</p>
-
-   <p className="text-green-400">
-  Profit/Loss:
-  {((price - 73313) * Number(tradeAmount || 0) / 73313).toFixed(2)}$
-</p>
-
-<button
-  className="bg-red-500 px-4 py-2 rounded-xl mt-3 w-full"
->
-  Close Trade
-</button>
-  </div>
-
-</div>
-</div>
-)}
+      <style jsx>{`
+        @keyframes slide-in {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out forwards;
+        }
+      `}</style>
     </main>
-
   )
 }
