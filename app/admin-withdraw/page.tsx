@@ -8,8 +8,8 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore"
-import { db } from "../../lib/firebase"
-import AdminSidebar from "../../components/AdminSidebar"
+import { db } from "@/lib/firebase"
+import AdminSidebar from "@/components/AdminSidebar"
 
 // Toast Notification Component
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
