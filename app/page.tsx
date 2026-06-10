@@ -13,10 +13,10 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
   }, [onClose]);
 
   return (
-    <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 animate-slide-in ${
+    <div className={`fixed top-6 right-6 z-[100] px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 max-w-[90vw] ${
       type === "success" ? "bg-emerald-900/90 border-emerald-500/50 text-emerald-200" : "bg-red-900/90 border-red-500/50 text-red-200"
     }`}>
-      <span className="text-xl">{type === "success" ? "✅" : "❌"}</span>
+      <span className="text-lg">{type === "success" ? "✅" : "❌"}</span>
       <span className="font-semibold text-sm">{message}</span>
     </div>
   )
@@ -29,7 +29,6 @@ const initialCoins = [
   { symbol: "SOL/USDT", price: 144.80, change: 5.4 },
   { symbol: "XRP/USDT", price: 2.42, change: 1.6 },
   { symbol: "DOGE/USDT", price: 0.152, change: -0.8 },
-  { symbol: "ADA/USDT", price: 0.45, change: 3.1 },
 ];
 
 export default function HomePage() {
@@ -43,7 +42,6 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Live Price Simulation (Client Side Only)
   const [coins, setCoins] = useState(initialCoins);
 
   useEffect(() => {
@@ -56,7 +54,6 @@ export default function HomePage() {
         })
       );
     }, 2000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -73,7 +70,7 @@ export default function HomePage() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setToast({ message: "Login Successful! Redirecting...", type: "success" });
+      setToast({ message: "Login Successful!", type: "success" });
       setTimeout(() => router.push("/dashboard"), 1000);
     } catch (error) {
       setToast({ message: "Invalid Email or Password", type: "error" });
@@ -89,26 +86,25 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-white overflow-x-hidden font-sans relative">
-      {/* Background Ambient Lights */}
-      <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[150px] pointer-events-none"></div>
+    <main className="min-h-screen bg-[#0B0F19] text-white overflow-x-hidden font-sans relative max-w-[100vw]">
+      {/* Background Lights */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[150px] pointer-events-none"></div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* NAVBAR */}
       <nav className="w-full border-b border-gray-800/50 bg-[#0B0F19]/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cyan-500/20">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm md:text-lg shadow-lg shadow-cyan-500/20">
               ₿
             </div>
-            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            <h1 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
               TradeNova
             </h1>
           </div>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-400 font-medium">
             <button className="hover:text-white transition-colors">Markets</button>
             <button className="hover:text-white transition-colors">Trade</button>
@@ -127,7 +123,7 @@ export default function HomePage() {
 
           {/* Mobile Hamburger */}
           <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-gray-400 hover:text-white transition-colors">
-            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               {menuOpen ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>
@@ -150,60 +146,69 @@ export default function HomePage() {
         )}
       </nav>
 
-      {/* LIVE TICKER */}
-      <div className="w-full border-b border-gray-800/50 overflow-hidden whitespace-nowrap py-3 bg-[#080C16]">
-        <div className="animate-marquee inline-flex gap-12 text-sm font-mono">
+      {/* LIVE TICKER - Fixed for mobile */}
+      <div className="w-full border-b border-gray-800/50 overflow-hidden whitespace-nowrap py-2 bg-[#080C16]">
+        <div className="animate-marquee inline-flex gap-8 text-xs font-mono">
           {coins.map((coin, index) => (
-            <span key={index} className={`inline-flex items-center gap-2 ${coin.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span key={index} className={`inline-flex items-center gap-1 ${coin.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               <span className="text-gray-400 font-sans">{coin.symbol}</span>
               <span className="font-semibold">${formatPrice(coin.price)}</span>
-              <span className="text-xs">{coin.change >= 0 ? '▲' : '▼'} {Math.abs(coin.change).toFixed(1)}%</span>
+              <span className="text-[10px]">{coin.change >= 0 ? '▲' : '▼'}{Math.abs(coin.change).toFixed(1)}%</span>
+            </span>
+          ))}
+          {/* Duplicate for seamless loop */}
+          {coins.map((coin, index) => (
+            <span key={`dup-${index}`} className={`inline-flex items-center gap-1 ${coin.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className="text-gray-400 font-sans">{coin.symbol}</span>
+              <span className="font-semibold">${formatPrice(coin.price)}</span>
+              <span className="text-[10px]">{coin.change >= 0 ? '▲' : '▼'}{Math.abs(coin.change).toFixed(1)}%</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* HERO SECTION */}
-      <section className="relative max-w-7xl mx-auto px-4 md:px-6 py-16 md:py-24 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 border border-cyan-500/20 rounded-full px-4 py-2 text-xs text-cyan-400 bg-cyan-500/5 mb-6 font-medium backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Trusted by 12M+ Traders Worldwide
+      {/* HERO SECTION - Mobile Optimized */}
+      <section className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-24 flex flex-col lg:flex-row gap-10 lg:gap-12 items-center">
+        <div className="relative z-10 w-full">
+          <div className="inline-flex items-center gap-2 border border-cyan-500/20 rounded-full px-3 py-1.5 text-[10px] md:text-xs text-cyan-400 bg-cyan-500/5 mb-5 font-medium backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Trusted by 12M+ Traders
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black leading-tight mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-7xl font-black leading-tight mb-4 md:mb-6 tracking-tight">
             <span className="text-white">TRADE</span><br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">LIKE FUTURE</span>
           </h1>
 
-          <p className="text-gray-400 text-lg md:text-xl leading-relaxed max-w-xl mb-10">
-            Experience institutional-grade crypto trading with live AI analytics, lightning-fast execution, and bank-grade security.
+          <p className="text-gray-400 text-sm md:text-xl leading-relaxed max-w-xl mb-6 md:mb-10">
+            Experience institutional-grade crypto trading with live AI analytics and bank-grade security.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-14">
-            <button onClick={() => setActiveModal("register")} className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-10 md:mb-14">
+            <button onClick={() => setActiveModal("register")} className="px-6 py-3 md:px-8 md:py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-base md:text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all">
               Start Trading
             </button>
-            <button className="px-8 py-4 rounded-xl border border-gray-700 text-lg font-semibold text-gray-300 hover:border-gray-500 hover:text-white transition-all bg-[#111827]">
+            <button className="px-6 py-3 md:px-8 md:py-4 rounded-xl border border-gray-700 text-base md:text-lg font-semibold text-gray-300 hover:border-gray-500 hover:text-white transition-all bg-[#111827]">
               Live Markets
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 md:gap-6">
+          {/* Stats Grid - 3 Columns on all screens now, but smaller text on mobile */}
+          <div className="grid grid-cols-3 gap-2 md:gap-6">
             {[
-              { value: "$18B+", label: "Daily Volume" },
-              { value: "12M+", label: "Active Traders" },
-              { value: "350+", label: "Coins Listed" }
+              { value: "$18B+", label: "Volume" },
+              { value: "12M+", label: "Traders" },
+              { value: "350+", label: "Coins" }
             ].map((stat, i) => (
-              <div key={i} className="bg-[#111827] border border-gray-800/50 rounded-2xl p-4 md:p-6">
-                <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{stat.value}</h2>
-                <p className="text-gray-500 mt-1 md:mt-2 text-xs md:text-sm">{stat.label}</p>
+              <div key={i} className="bg-[#111827] border border-gray-800/50 rounded-xl md:rounded-2xl p-3 md:p-6">
+                <h2 className="text-lg md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{stat.value}</h2>
+                <p className="text-gray-500 mt-0.5 md:mt-2 text-[10px] md:text-sm">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* LIVE CHART CARD */}
-        <div className="relative hidden lg:block">
+        {/* LIVE CHART CARD - Hidden on Mobile to save space and prevent overflow */}
+        <div className="relative hidden lg:block w-full">
           <div className="absolute inset-0 bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
           <div className="relative bg-[#111827]/80 border border-gray-800/50 rounded-3xl p-6 backdrop-blur-xl shadow-2xl shadow-black/50">
             <div className="flex justify-between items-center mb-6">
@@ -223,18 +228,14 @@ export default function HomePage() {
               <p className="text-emerald-400 text-lg mt-1 font-semibold">▲ +{coins[0].change.toFixed(2)}%</p>
             </div>
 
-            {/* SVG Line Chart Generation */}
-            <div className="h-[250px] w-full relative overflow-hidden rounded-xl bg-[#080C16] border border-gray-800/50 p-4">
-              <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,80 C20,70 40,85 60,60 C80,35 100,50 120,40 C140,30 160,45 180,25 C200,5 220,20 240,15 C260,10 280,20 300,5 L300,100 L0,100 Z" fill="url(#chartGrad)" />
-                <path d="M0,80 C20,70 40,85 60,60 C80,35 100,50 120,40 C140,30 160,45 180,25 C200,5 220,20 240,15 C260,10 280,20 300,5" fill="none" stroke="#22d3ee" strokeWidth="2.5" />
-              </svg>
+            <div className="h-[250px] w-full relative overflow-hidden rounded-xl bg-[#080C16] border border-gray-800/50 flex items-end justify-around px-8 pb-8 pt-20">
+              {[40, 60, 55, 80, 72, 95, 88, 100].map((h, i) => (
+                <div
+                  key={i}
+                  className="w-8 md:w-14 rounded-t-2xl bg-gradient-to-t from-cyan-600 to-cyan-400 opacity-80 hover:opacity-100 transition-opacity"
+                  style={{ height: `${h}%` }}
+                />
+              ))}
             </div>
 
             <div className="grid grid-cols-3 gap-4 mt-6">
@@ -255,31 +256,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* MODAL OVERLAY */}
+      {/* MODAL OVERLAY - Mobile Centered */}
       {activeModal && (
         <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
-          <div className="relative w-full max-w-md bg-[#111827] border border-gray-800 rounded-3xl p-8 shadow-2xl shadow-black/50 animate-scale-in" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-md bg-[#111827] border border-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             
-            <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition-all">
+            <button onClick={() => setActiveModal(null)} className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition-all">
               ✕
             </button>
 
-            <h2 className="text-3xl font-black text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+            <h2 className="text-2xl md:text-3xl font-black text-center mb-6 md:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
               {activeModal === "login" ? "LOG IN" : "CREATE ACCOUNT"}
             </h2>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {activeModal === "register" && (
                 <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
+                  className="w-full p-3.5 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
               )}
               <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-4 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
+                className="w-full p-3.5 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
               <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-4 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
+                className="w-full p-3.5 rounded-xl bg-[#0B0F19] border border-gray-700 outline-none focus:border-cyan-500 transition-colors text-sm" />
 
               <button onClick={activeModal === "login" ? handleLogin : handleRegister} disabled={isLoading}
-                className="w-full p-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-base shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
+                className="w-full p-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-base shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
                 {isLoading ? (
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 ) : (
@@ -288,7 +289,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <p className="text-center text-gray-500 text-sm mt-6">
+            <p className="text-center text-gray-500 text-xs md:text-sm mt-5">
               {activeModal === "login" ? "Don't have an account? " : "Already have an account? "}
               <button onClick={() => setActiveModal(activeModal === "login" ? "register" : "login")} className="text-cyan-400 font-semibold hover:underline">
                 {activeModal === "login" ? "Sign Up" : "Log In"}
@@ -297,31 +298,6 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
-      {/* CSS Animations & Marquee */}
-      <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
-        }
-        @keyframes slide-in {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out forwards;
-        }
-        @keyframes scale-in {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.2s ease-out forwards;
-        }
-      `}</style>
     </main>
   );
 }
