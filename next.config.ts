@@ -1,15 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  
   typescript: {
-    ignoreBuildErrors: true, // ✅ 'i' small hai
+    ignoreBuildErrors: true,
   },
-  
-  eslint: {
-    ignoreDuringBuilds: true, // ✅ 'i' small hai
-  },
+  // ✅ Ye Next.js 16 ko batayega ki config sahi hai
+  turbopack: {}, 
 };
 
 export default nextConfig;
