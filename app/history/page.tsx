@@ -35,7 +35,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   }
   const styleKey = Object.keys(styles).find(key => lowerStatus.includes(key)) || "pending"
   return (
-    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border capitalize ${styles[styleKey as keyof typeof styles]}`}>
+    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${styles[styleKey as keyof typeof styles]}`}>
       {status || "Pending"}
     </span>
   )
@@ -83,7 +83,7 @@ export default function HistoryPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] p-6 md:p-10">
+    <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] p-4 md:p-10 max-w-[100vw] overflow-x-hidden">
       
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
@@ -98,7 +98,7 @@ export default function HistoryPage() {
             { id: "withdrawals", label: "💸 Withdrawals" },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`px-4 md:px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === tab.id ? "bg-[#0B0E11] text-[#FCD535] shadow-lg" : "text-[#848E9C] hover:text-white hover:bg-[#0B0E11]/50"
               }`}
             >{tab.label}</button>
@@ -113,7 +113,7 @@ export default function HistoryPage() {
         ) : (
           <div className="space-y-4">
             
-            {/* ==================== TRADES TAB ==================== */}
+            {/* ==================== TRADES TAB (PREMIUM) ==================== */}
             {activeTab === "trades" && (
               <>
                 {trades.length === 0 ? (
@@ -126,27 +126,41 @@ export default function HistoryPage() {
                     const isBuy = item.direction === "BUY"
                     const isWin = item.adminResult === "WIN"
                     const investment = Number(item.amount) || 0
-                    const profitAmount = isWin ? Number(item.profit?.replace('+', '').replace('$', '').replace(',', '') || 0) : 0
+                    const payoutPercent = item.payoutPercent || 0
+                    const profitAmount = isWin ? (investment * payoutPercent) / 100 : 0
                     const totalPayout = isWin ? investment + profitAmount : 0
+                    const shortId = item.id.substring(0, 8).toUpperCase()
                     
                     return (
-                      <div key={item.id} className={`bg-[#1E2329] border ${isWin ? 'border-[#0ECB81]/20' : 'border-[#F6465D]/20'} rounded-2xl overflow-hidden shadow-lg`}>
+                      <div key={item.id} className={`bg-[#1E2329] border ${isWin ? 'border-[#0ECB81]/20' : item.adminResult === "LOSS" ? 'border-[#F6465D]/20' : 'border-[#FCD535]/20'} rounded-2xl overflow-hidden shadow-lg`}>
                         
                         {/* Top Header */}
-                        <div className={`flex items-center justify-between px-5 py-3 ${isWin ? 'bg-[#0ECB81]/5' : 'bg-[#F6465D]/5'}`}>
-                          <div className="flex items-center gap-2">
+                        <div className={`flex items-center justify-between px-5 py-3 ${isWin ? 'bg-[#0ECB81]/5' : item.adminResult === "LOSS" ? 'bg-[#F6465D]/5' : 'bg-[#FCD535]/5'}`}>
+                          <div className="flex items-center gap-3">
                             <span className="text-white font-bold text-sm">{item.coin || "BTC/USDT"}</span>
                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${isBuy ? 'bg-[#0ECB81]/20 text-[#0ECB81]' : 'bg-[#F6465D]/20 text-[#F6465D]'}`}>
                               {isBuy ? "CALL ▲" : "PUT ▼"}
                             </span>
-                            <span className="text-[10px] text-[#848E9C] ml-2">{item.duration || 60}s</span>
+                            <span className="text-[10px] text-[#848E9C] bg-[#0B0E11] px-2 py-0.5 rounded">{item.duration || 60}s</span>
                           </div>
-                          <StatusBadge status={item.adminResult || "Pending"} />
+                          <StatusBadge status={item.adminResult || "Active"} />
                         </div>
 
-                        {/* Price & Payout Section */}
+                        {/* Content */}
                         <div className="p-5 space-y-4">
                           
+                          {/* Order ID & Time */}
+                          <div className="flex justify-between items-center border-b border-[#2B3139] pb-3">
+                            <div>
+                              <p className="text-[10px] text-[#5E6673] uppercase">Order ID</p>
+                              <p className="text-xs text-[#848E9C] font-mono">#{shortId}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-[#5E6673] uppercase">Executed At</p>
+                              <p className="text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</p>
+                            </div>
+                          </div>
+
                           {/* Investment & Payout Row */}
                           <div className="flex justify-between items-end">
                             <div>
@@ -154,8 +168,8 @@ export default function HistoryPage() {
                               <p className="text-white font-mono font-bold text-lg">${investment.toFixed(2)}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-[10px] text-[#848E9C] uppercase">Payout</p>
-                              <p className={`font-mono font-bold text-lg ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                              <p className="text-[10px] text-[#848E9C] uppercase">Payout ({payoutPercent}%)</p>
+                              <p className={`font-mono font-bold text-lg ${isWin ? 'text-[#0ECB81]' : 'text-[#848E9C]'}`}>
                                 {isWin ? `$${totalPayout.toFixed(2)}` : '$0.00'}
                               </p>
                             </div>
@@ -164,20 +178,23 @@ export default function HistoryPage() {
                           {/* Entry -> Exit Price Row */}
                           <div className="flex items-center justify-between bg-[#0B0E11] rounded-xl p-3 border border-[#2B3139]">
                             <div className="flex-1 text-center">
-                              <p className="text-[10px] text-[#848E9C] uppercase">Entry Price</p>
+                              <p className="text-[10px] text-[#5E6673] uppercase">Entry Price</p>
                               <p className="font-mono text-sm text-white font-medium">${Number(item.entryPrice || 0).toFixed(2)}</p>
                             </div>
-                            <div className="px-4 text-[#848E9C] text-lg">→</div>
+                            <div className="px-4 text-[#5E6673]">→</div>
                             <div className="flex-1 text-center">
-                              <p className="text-[10px] text-[#848E9C] uppercase">Closing Price</p>
-                              <p className={`font-mono text-sm font-medium ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                              <p className="text-[10px] text-[#5E6673] uppercase">Closing Price</p>
+                              <p className={`font-mono text-sm font-medium ${isWin ? 'text-[#0ECB81]' : item.adminResult === "LOSS" ? 'text-[#F6465D]' : 'text-white'}`}>
                                 ${Number(item.exitPrice || 0).toFixed(2)}
                               </p>
                             </div>
                           </div>
 
-                          {/* Time */}
-                          <p className="text-[10px] text-[#5E6673] text-right">{safeFormatDate(item.createdAt)}</p>
+                          {/* Fee */}
+                          <div className="flex justify-between items-center text-[10px] text-[#5E6673]">
+                            <span>Commission / Fee</span>
+                            <span className="font-mono">$0.00</span>
+                          </div>
                         </div>
                       </div>
                     )
@@ -188,8 +205,8 @@ export default function HistoryPage() {
 
             {/* ==================== DEPOSITS TAB ==================== */}
             {activeTab === "deposits" && (
-              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-hidden">
-                <table className="w-full text-left">
+              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-x-auto">
+                <table className="w-full text-left min-w-[400px]">
                   <thead>
                     <tr className="border-b border-[#2B3139] bg-[#0B0E11]">
                       <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Amount</th>
@@ -203,7 +220,7 @@ export default function HistoryPage() {
                       <tr><td colSpan={4} className="text-center py-12 text-[#5E6673]">No Deposits Found</td></tr>
                     ) : (
                       deposits.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#0B0E11]/50">
+                        <tr key={item.id} className="hover:bg-[#0B0E11]/50 transition-colors">
                           <td className="px-6 py-4 font-mono font-bold text-[#0ECB81]">${(Number(item.amount) || 0).toFixed(2)}</td>
                           <td className="px-6 py-4 text-white">{item.coin || "USDT"}</td>
                           <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
@@ -218,8 +235,8 @@ export default function HistoryPage() {
 
             {/* ==================== WITHDRAWALS TAB ==================== */}
             {activeTab === "withdrawals" && (
-              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-hidden">
-                <table className="w-full text-left">
+              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-x-auto">
+                <table className="w-full text-left min-w-[400px]">
                   <thead>
                     <tr className="border-b border-[#2B3139] bg-[#0B0E11]">
                       <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Amount</th>
@@ -232,7 +249,7 @@ export default function HistoryPage() {
                       <tr><td colSpan={3} className="text-center py-12 text-[#5E6673]">No Withdrawals Found</td></tr>
                     ) : (
                       withdraws.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#0B0E11]/50">
+                        <tr key={item.id} className="hover:bg-[#0B0E11]/50 transition-colors">
                           <td className="px-6 py-4 font-mono font-bold text-[#F6465D]">${(Number(item.amount) || 0).toFixed(2)}</td>
                           <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
                           <td className="px-6 py-4 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>

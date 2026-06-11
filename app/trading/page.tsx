@@ -4,12 +4,13 @@ import { useEffect, useState } from "react"
 import { doc, getDoc, addDoc, collection, updateDoc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 
-// Payout Tiers (Hidden from User)
+// Payout Tiers (Updated for new durations)
 const PAYOUT_TIERS: Record<number, number> = {
   60: 30,
-  80: 50,
-  90: 70,
-  120: 85,
+  90: 50,
+  120: 70,
+  150: 80,
+  180: 85,
   300: 100,
 }
 
@@ -24,12 +25,14 @@ export default function TradingPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
   const [activeTrade, setActiveTrade] = useState(false)
 
+  // ✅ UPDATED: New Durations 60, 90, 120, 150, 180, 300
   const getAvailableDurations = () => {
     const amount = Number(tradeAmount) || 0
     if (amount <= 100) return [60]
-    if (amount <= 300) return [60, 80]
-    if (amount <= 500) return [60, 80, 90]
-    return [60, 80, 90, 120, 300]
+    if (amount <= 500) return [60, 90]
+    if (amount <= 1000) return [60, 90, 120]
+    if (amount <= 5000) return [60, 90, 120, 150, 180]
+    return [60, 90, 120, 150, 180, 300]
   }
 
   useEffect(() => {
@@ -90,7 +93,7 @@ export default function TradingPage() {
 
       await updateDoc(userRef, { balance: Number(currentBalance) - amount })
 
-      const currentEntryPrice = price; // ✅ Capture entry price exactly at this moment
+      const currentEntryPrice = price;
 
       const tradeRef = await addDoc(collection(db, "trades"), {
         email: user.email || "",
@@ -99,7 +102,7 @@ export default function TradingPage() {
         direction: tradeDirection,
         duration: tradeTime,
         entryPrice: currentEntryPrice,
-        exitPrice: currentEntryPrice, // Initially same as entry
+        exitPrice: currentEntryPrice,
         payoutPercent: PAYOUT_TIERS[tradeTime] || 30,
         profit: "$0.00",
         adminResult: "PENDING",
@@ -112,7 +115,6 @@ export default function TradingPage() {
       setTradeAmount("")
       setToast({ message: `Trade started! Resolving in ${tradeTime} seconds...`, type: "success" })
 
-      // START TIMER
       setTimeout(async () => {
         try {
           const freshUserSnap = await getDoc(userRef)
@@ -124,17 +126,15 @@ export default function TradingPage() {
           const profitAmount = (amount * payoutPercent) / 100
           const finalProfit = result === "WIN" ? `+${profitAmount.toFixed(2)}` : `-${amount.toFixed(2)}`
 
-          // ✅ CALCULATE REALISTIC EXIT PRICE
           const priceMove = (Math.random() * 150) + 50;
           let exitPrice = currentEntryPrice;
           if (tradeDirection === "BUY") {
             exitPrice = result === "WIN" ? currentEntryPrice + priceMove : currentEntryPrice - priceMove
-          } else { // SELL
+          } else {
             exitPrice = result === "WIN" ? currentEntryPrice - priceMove : currentEntryPrice + priceMove
           }
           exitPrice = Number(exitPrice.toFixed(2))
 
-          // Update Trade in Firebase
           await updateDoc(tradeRef, {
             adminResult: result,
             status: "Closed",
@@ -179,21 +179,21 @@ export default function TradingPage() {
   const availableDurations = getAvailableDurations()
 
   return (
-    <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] font-sans">
+    <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] font-sans max-w-[100vw] overflow-x-hidden">
       
       {toast && (
-        <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 animate-slide-in ${
-          toast.type === "success" ? "bg-green-900/90 border-green-500/50 text-green-200" : "bg-red-900/90 border-red-500/50 text-red-200"
+        <div className={`fixed top-4 left-4 right-4 md:left-auto md:right-6 md:top-6 md:max-w-sm z-[100] px-5 py-3 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 transition-all ${
+          toast.type === "success" ? "bg-emerald-900/90 border-emerald-500/50 text-emerald-200" : "bg-red-900/90 border-red-500/50 text-red-200"
         }`}>
-          <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
-          <span className="font-semibold">{toast.message}</span>
+          <span className="text-lg">{toast.type === "success" ? "✅" : "❌"}</span>
+          <span className="font-semibold text-sm">{toast.message}</span>
         </div>
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1E2329] border border-[#2B3139] rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-[#2B3139] flex justify-between items-center bg-[#0B0E11]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
+          <div className="bg-[#1E2329] border-t-2 border-[#FCD535] md:border md:border-[#2B3139] md:rounded-xl w-full md:max-w-md shadow-2xl rounded-t-3xl">
+            <div className="p-5 border-b border-[#2B3139] flex justify-between items-center bg-[#0B0E11] rounded-t-3xl md:rounded-t-xl">
               <h3 className="text-lg font-bold text-white">{tradeDirection === "BUY" ? "▲ Buy Long" : "▼ Sell Short"}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-[#848E9C] hover:text-white text-xl">✕</button>
             </div>
@@ -215,20 +215,26 @@ export default function TradingPage() {
                 />
               </div>
 
+              {/* ✅ UPDATED DURATION UI */}
               <div>
                 <label className="text-xs text-[#848E9C] uppercase tracking-wider block mb-2">Duration</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {availableDurations.map(t => (
-                    <button 
-                      key={t} 
-                      onClick={() => setTradeTime(t)}
-                      className={`py-2 rounded text-xs font-bold transition-colors ${
-                        tradeTime === t ? "bg-[#FCD535] text-black" : "bg-[#0B0E11] text-[#848E9C] border border-[#2B3139] hover:border-[#FCD535]"
-                      }`}
-                    >
-                      {t}s {/* ✅ Removed Payout % from here */}
-                    </button>
-                  ))}
+                  {[60, 90, 120, 150, 180, 300].map(t => {
+                    const isAvailable = availableDurations.includes(t)
+                    return (
+                      <button 
+                        key={t} 
+                        onClick={() => isAvailable && setTradeTime(t)}
+                        className={`py-2.5 rounded-lg text-xs font-bold transition-all ${
+                          !isAvailable ? "bg-[#0B0E11] text-[#2B3139] border border-[#1E2329] cursor-not-allowed" :
+                          tradeTime === t ? "bg-[#FCD535] text-black shadow-lg shadow-[#FCD535]/20" : 
+                          "bg-[#0B0E11] text-[#848E9C] border border-[#2B3139] hover:border-[#FCD535]"
+                        }`}
+                      >
+                        {t}s
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -237,7 +243,7 @@ export default function TradingPage() {
                 disabled={isSubmitting}
                 className={`w-full py-4 rounded-lg font-bold text-base transition-all flex items-center justify-center gap-2 mt-2 ${
                   isSubmitting ? "bg-[#2B3139] text-[#848E9C] cursor-not-allowed" : 
-                  tradeDirection === "BUY" ? "bg-[#0ECB81] text-black hover:bg-opacity-90" : "bg-[#F6465D] text-white hover:bg-opacity-90"
+                  tradeDirection === "BUY" ? "bg-[#0ECB81] text-black hover:bg-opacity-90 shadow-lg shadow-[#0ECB81]/20" : "bg-[#F6465D] text-white hover:bg-opacity-90 shadow-lg shadow-[#F6465D]/20"
                 }`}
               >
                 {isSubmitting ? (
@@ -257,7 +263,7 @@ export default function TradingPage() {
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <h2 className="text-xl font-bold text-white">BTC/USDT</h2>
               <span className="text-[#F6465D] text-xl font-mono font-bold">${price.toFixed(2)}</span>
-              {activeTrade && <span className="text-yellow-400 text-sm animate-pulse">⏳ Trade Running...</span>}
+              {activeTrade && <span className="text-[#FCD535] text-sm animate-pulse font-semibold">⏳ Trade Running...</span>}
             </div>
           </div>
 
@@ -265,10 +271,10 @@ export default function TradingPage() {
              <div className="absolute inset-0">
                 {[...Array(10)].map((_, i) => <div key={i} className="absolute w-full border-t border-[#1E2329]" style={{ top: `${i * 10}%` }} />)}
              </div>
-             <div className="relative z-10 flex items-end h-full gap-2">
+             <div className="relative z-10 flex items-end h-full gap-1.5">
                 {[40, 60, 30, 80, 50, 90, 60, 75, 45, 85, 55, 95, 40, 70].map((h, i) => (
                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                      <div className={`w-full rounded-sm ${i % 2 === 0 ? 'bg-[#0ECB81]' : 'bg-[#F6465D]'}`} style={{ height: `${h}%` }}></div>
+                      <div className={`w-full rounded-t-sm ${i % 2 === 0 ? 'bg-[#0ECB81]' : 'bg-[#F6465D]'}`} style={{ height: `${h}%` }}></div>
                    </div>
                 ))}
              </div>
@@ -277,13 +283,13 @@ export default function TradingPage() {
           <div className="grid grid-cols-2 gap-3 p-4 border-t border-[#1E2329] bg-[#0B0E11]">
             <button 
               onClick={() => openTradeModal("BUY")}
-              className="py-4 rounded-lg bg-[#0ECB81] text-black font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95"
+              className="py-4 rounded-lg bg-[#0ECB81] text-black font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-[#0ECB81]/20"
             >
               BUY / LONG
             </button>
             <button 
               onClick={() => openTradeModal("SELL")}
-              className="py-4 rounded-lg bg-[#F6465D] text-white font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95"
+              className="py-4 rounded-lg bg-[#F6465D] text-white font-bold text-lg hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-[#F6465D]/20"
             >
               SELL / SHORT
             </button>
@@ -294,24 +300,14 @@ export default function TradingPage() {
           <div className="p-4 flex-1">
             <h3 className="text-sm font-bold text-[#848E9C] mb-3 uppercase tracking-wider">Account</h3>
             <div className="space-y-3">
-              <div className="bg-[#1E2329] p-3 rounded-lg border border-[#2B3139]">
-                <p className="text-[#848E9C] text-xs">Wallet Balance</p>
-                <p className="text-lg font-bold text-[#FCD535]">${userData?.balance?.toFixed(2) || "0.00"}</p>
+              <div className="bg-[#1E2329] p-4 rounded-xl border border-[#2B3139]">
+                <p className="text-[#848E9C] text-xs mb-1">Wallet Balance</p>
+                <p className="text-xl font-bold text-[#FCD535] font-mono">${userData?.balance?.toFixed(2) || "0.00"}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes slide-in {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out forwards;
-        }
-      `}</style>
     </main>
   )
 }
