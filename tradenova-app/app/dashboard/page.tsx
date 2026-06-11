@@ -1,26 +1,31 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 
-// Initial Market Data
 const initialMarket = [
   { pair: "BTC/USDT", price: 73313.00, change: -2.62 },
   { pair: "ETH/USDT", price: 3520.50, change: 2.81 },
   { pair: "SOL/USDT", price: 144.80, change: 5.45 },
   { pair: "XRP/USDT", price: 2.42, change: 1.62 },
   { pair: "DOGE/USDT", price: 0.152, change: -0.81 },
-  { pair: "ADA/USDT", price: 0.45, change: 3.10 },
 ]
 
 export default function DashboardPage() {
   const [userData, setUserData] = useState<any>(null)
   const [liveMarket, setLiveMarket] = useState(initialMarket)
-  const [chartData, setChartData] = useState<number[]>(() => Array.from({ length: 40 }, () => 360 + (Math.random() - 0.5) * 200))
+  const [chartData, setChartData] = useState<number[]>([])
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load User Data from Firebase
+  // Initialize Chart Data on client side only
+  useEffect(() => {
+    setChartData(Array.from({ length: 40 }, () => 360 + (Math.random() - 0.5) * 200))
+    setIsLoaded(true)
+  }, [])
+
+  // Load User Data
   useEffect(() => {
     const loadUser = async () => {
       const user = JSON.parse(localStorage.getItem("user") || "{}")
@@ -43,22 +48,23 @@ export default function DashboardPage() {
     loadUser()
   }, [])
 
-  // ✅ LIVE CHART ANIMATION (Line moves like real trading)
+  // ✅ LIVE CHART ANIMATION
   useEffect(() => {
+    if (!isLoaded) return
     const interval = setInterval(() => {
       setChartData(prev => {
+        if (prev.length === 0) return prev
         const newData = [...prev.slice(1)]
         const lastPrice = newData[newData.length - 1]
-        // Random walk logic
         const nextPrice = lastPrice + (Math.random() - 0.48) * 40
-        newData.push(Math.max(150, Math.min(450, nextPrice))) // Keep within chart bounds
+        newData.push(Math.max(150, Math.min(450, nextPrice)))
         return newData
       })
-    }, 1000) // Updates every 1 second
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isLoaded])
 
-  // ✅ LIVE MARKET PRICES UPDATE
+  // ✅ LIVE MARKET PRICES
   useEffect(() => {
     const interval = setInterval(() => {
       setLiveMarket(prev => prev.map(coin => {
@@ -76,26 +82,23 @@ export default function DashboardPage() {
     window.location.href = "/"
   }
 
-  // REAL VALUES FROM FIREBASE
   const balance = Number(userData?.balance || 0).toFixed(2)
   const profit = Number(userData?.profit || 0)
   const totalTrades = Number(userData?.totalTrades || 0)
   const referralBonus = Number(userData?.referralBonus || 0).toFixed(2)
 
-  // Format price
   const formatPrice = (price: number) => {
     if (price >= 1000) return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     if (price >= 1) return price.toFixed(2)
     return price.toFixed(4)
   }
 
-  // Generate SVG Path from chartData
   const generateSvgPath = () => {
-    const points = chartData.map((val, i) => `${i * 25},${val}`).join(' ')
-    return points
+    if (chartData.length === 0) return ""
+    return chartData.map((val, i) => `${i * 25},${val}`).join(' ')
   }
 
-  const isChartUp = chartData[chartData.length - 1] > chartData[0]
+  const isChartUp = chartData.length > 1 && chartData[chartData.length - 1] > chartData[0]
   const chartColor = isChartUp ? "#00ffcc" : "#ff4757"
   const chartGradientId = isChartUp ? "gradUp" : "gradDown"
 
@@ -116,9 +119,15 @@ export default function DashboardPage() {
               ID: {userData?.email || "Loading..."}
             </p>
           </div>
-          <button onClick={logout} className="px-4 py-2 md:px-6 md:py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-bold text-sm md:text-base shadow-[0_0_15px_#ff000088] transition-all">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            {/* ✅ V2 BADGE - Agar ye dikha toh naya code chal raha hai */}
+            <span className="hidden md:flex items-center gap-1 text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30 animate-pulse">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span> V2.0 LIVE
+            </span>
+            <button onClick={logout} className="px-4 py-2 md:px-6 md:py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-bold text-sm md:text-base shadow-[0_0_15px_#ff000088] transition-all">
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="p-4 md:p-8">
@@ -157,7 +166,7 @@ export default function DashboardPage() {
 
           <div className="grid lg:grid-cols-[1fr_380px] gap-6 md:gap-8">
 
-            {/* ✅ LIVE CHART WITH ANIMATED LINE */}
+            {/* ✅ LIVE CHART */}
             <div className="bg-[#07111d] border border-cyan-500/20 rounded-[20px] md:rounded-[35px] p-4 md:p-6">
 
               <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -173,38 +182,36 @@ export default function DashboardPage() {
               </div>
 
               <div className="h-[250px] md:h-[450px] rounded-[20px] md:rounded-[30px] bg-[#020817] border border-cyan-500/10 relative overflow-hidden">
-                {/* Grid Lines */}
                 <div className="absolute inset-0">
                   {[...Array(12)].map((_, i) => <div key={`h-${i}`} className="absolute w-full border-t border-white/5" style={{ top: `${i * 40}px` }} />)}
                   {[...Array(25)].map((_, i) => <div key={`v-${i}`} className="absolute h-full border-l border-white/5" style={{ left: `${i * 40}px` }} />)}
                 </div>
 
-                {/* Dynamic Animated SVG */}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 450" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id={chartGradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor={chartColor} stopOpacity="0.3"/>
-                      <stop offset="100%" stopColor={chartColor} stopOpacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  
-                  {/* Fill area under the line */}
-                  <path 
-                    d={`M0,${chartData[0]} ${chartData.map((val, i) => `L${i*25},${val}`).join(' ')} L${(chartData.length-1)*25},450 L0,450 Z`} 
-                    fill={`url(#${chartGradientId})`} 
-                  />
-                  
-                  {/* The glowing line */}
-                  <polyline
-                    fill="none"
-                    stroke={chartColor}
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={generateSvgPath()}
-                    style={{ filter: `drop-shadow(0 0 8px ${chartColor})` }}
-                  />
-                </svg>
+                {isLoaded && chartData.length > 0 && (
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 450" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={chartGradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor={chartColor} stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor={chartColor} stopOpacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    
+                    <path 
+                      d={`M0,${chartData[0]} ${chartData.map((val, i) => `L${i*25},${val}`).join(' ')} L${(chartData.length-1)*25},450 L0,450 Z`} 
+                      fill={`url(#${chartGradientId})`} 
+                    />
+                    
+                    <polyline
+                      fill="none"
+                      stroke={chartColor}
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={generateSvgPath()}
+                      style={{ filter: `drop-shadow(0 0 8px ${chartColor})` }}
+                    />
+                  </svg>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:gap-5 mt-6 md:mt-8">
