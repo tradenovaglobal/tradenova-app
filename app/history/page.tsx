@@ -10,7 +10,6 @@ import { db } from "../lib/firebase"
 
 type TabType = "trades" | "deposits" | "withdrawals"
 
-// Safe Date Formatter
 const safeFormatDate = (timestamp: any): string => {
   if (!timestamp) return "N/A"
   try {
@@ -22,7 +21,6 @@ const safeFormatDate = (timestamp: any): string => {
   } catch { return "N/A" }
 }
 
-// Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
   const lowerStatus = (status || "pending").toLowerCase()
   const styles: Record<string, string> = {
@@ -36,7 +34,6 @@ const StatusBadge = ({ status }: { status: string }) => {
     closed: "bg-[#848E9C]/10 text-[#848E9C] border-[#848E9C]/30",
   }
   const styleKey = Object.keys(styles).find(key => lowerStatus.includes(key)) || "pending"
-  
   return (
     <span className={`px-2.5 py-1 rounded-md text-xs font-bold border capitalize ${styles[styleKey as keyof typeof styles]}`}>
       {status || "Pending"}
@@ -54,26 +51,18 @@ export default function HistoryPage() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}")
     if (!user.email) return
-
     let isMounted = true
 
     const loadHistory = async () => {
       try {
         const depositSnap = await getDocs(collection(db, "deposits"))
-        const userDeposits = depositSnap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((item: any) => item.email === user.email)
+        const userDeposits = depositSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((item: any) => item.email === user.email)
         if (isMounted) setDeposits(userDeposits)
 
         const withdrawSnap = await getDocs(collection(db, "withdrawals"))
-        const userWithdraws = withdrawSnap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((item: any) => item.email === user.email)
+        const userWithdraws = withdrawSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((item: any) => item.email === user.email)
         if (isMounted) setWithdraws(userWithdraws)
-        
-      } catch (error) {
-        console.error("Error fetching history:", error)
-      }
+      } catch (error) { console.error("Error:", error) }
     }
 
     const q = collection(db, "trades")
@@ -86,57 +75,36 @@ export default function HistoryPage() {
           const timeB = b.createdAt?.seconds || 0
           return timeB - timeA
         })
-      
-      if (isMounted) {
-        setTrades(userTrades)
-        setLoading(false)
-      }
-    }, (error) => {
-      console.error("Error fetching trades:", error)
-      if (isMounted) setLoading(false)
-    })
+      if (isMounted) { setTrades(userTrades); setLoading(false) }
+    }, (error) => { console.error("Error:", error); if (isMounted) setLoading(false) })
 
     loadHistory()
-
-    return () => {
-      isMounted = false
-      unsubscribe()
-    }
+    return () => { isMounted = false; unsubscribe() }
   }, [])
 
   return (
     <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] p-6 md:p-10">
       
       <div className="max-w-4xl mx-auto">
-        
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white">Transaction History</h1>
           <p className="text-sm text-[#848E9C] mt-1">View your trading, deposit, and withdrawal records</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-[#1E2329] p-1.5 rounded-xl w-fit mb-8">
           {[
             { id: "trades", label: "📈 Trades" },
             { id: "deposits", label: "💵 Deposits" },
             { id: "withdrawals", label: "💸 Withdrawals" },
           ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
               className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                activeTab === tab.id 
-                  ? "bg-[#0B0E11] text-[#FCD535] shadow-lg" 
-                  : "text-[#848E9C] hover:text-white hover:bg-[#0B0E11]/50"
+                activeTab === tab.id ? "bg-[#0B0E11] text-[#FCD535] shadow-lg" : "text-[#848E9C] hover:text-white hover:bg-[#0B0E11]/50"
               }`}
-            >
-              {tab.label}
-            </button>
+            >{tab.label}</button>
           ))}
         </div>
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-[#848E9C]">
             <div className="w-12 h-12 border-4 border-[#2B3139] border-t-[#FCD535] rounded-full animate-spin mb-4"></div>
@@ -145,61 +113,72 @@ export default function HistoryPage() {
         ) : (
           <div className="space-y-4">
             
-            {/* ==================== TRADES TAB (Premium Trade Receipts) ==================== */}
+            {/* ==================== TRADES TAB ==================== */}
             {activeTab === "trades" && (
               <>
                 {trades.length === 0 ? (
                   <div className="text-center py-16 bg-[#1E2329] rounded-xl border border-[#2B3139]">
                     <span className="text-4xl mb-3 block">📊</span>
                     <p className="font-semibold text-[#848E9C]">No Trade History</p>
-                    <p className="text-sm mt-1 text-[#5E6673]">Start trading to see your results here</p>
                   </div>
                 ) : (
                   trades.map((item) => {
                     const isBuy = item.direction === "BUY"
                     const isWin = item.adminResult === "WIN"
+                    const investment = Number(item.amount) || 0
+                    const profitAmount = isWin ? Number(item.profit?.replace('+', '').replace('$', '').replace(',', '') || 0) : 0
+                    const totalPayout = isWin ? investment + profitAmount : 0
                     
                     return (
-                      // ✅ PREMIUM TRADE RECEIPT CARD (Real App Style)
-                      <div key={item.id} className={`bg-[#1E2329] border ${isWin ? 'border-[#0ECB81]/30' : 'border-[#F6465D]/30'} rounded-2xl overflow-hidden shadow-lg`}>
+                      <div key={item.id} className={`bg-[#1E2329] border ${isWin ? 'border-[#0ECB81]/20' : 'border-[#F6465D]/20'} rounded-2xl overflow-hidden shadow-lg`}>
                         
-                        {/* Top Bar */}
+                        {/* Top Header */}
                         <div className={`flex items-center justify-between px-5 py-3 ${isWin ? 'bg-[#0ECB81]/5' : 'bg-[#F6465D]/5'}`}>
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-bold">{item.coin || "BTC/USDT"}</span>
+                            <span className="text-white font-bold text-sm">{item.coin || "BTC/USDT"}</span>
                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${isBuy ? 'bg-[#0ECB81]/20 text-[#0ECB81]' : 'bg-[#F6465D]/20 text-[#F6465D]'}`}>
-                              {isBuy ? "▲ BUY" : "▼ SELL"}
+                              {isBuy ? "CALL ▲" : "PUT ▼"}
                             </span>
+                            <span className="text-[10px] text-[#848E9C] ml-2">{item.duration || 60}s</span>
                           </div>
                           <StatusBadge status={item.adminResult || "Pending"} />
                         </div>
 
-                        {/* Prices Section (The Real Deal) */}
-                        <div className="grid grid-cols-2 gap-4 p-5">
-                          <div className="bg-[#0B0E11] rounded-lg p-3 border border-[#2B3139]">
-                            <p className="text-[#848E9C] text-[10px] uppercase mb-1">Entry Price</p>
-                            <p className="text-white font-mono font-bold text-sm">${Number(item.entryPrice || 0).toFixed(2)}</p>
+                        {/* Price & Payout Section */}
+                        <div className="p-5 space-y-4">
+                          
+                          {/* Investment & Payout Row */}
+                          <div className="flex justify-between items-end">
+                            <div>
+                              <p className="text-[10px] text-[#848E9C] uppercase">Investment</p>
+                              <p className="text-white font-mono font-bold text-lg">${investment.toFixed(2)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-[#848E9C] uppercase">Payout</p>
+                              <p className={`font-mono font-bold text-lg ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                                {isWin ? `$${totalPayout.toFixed(2)}` : '$0.00'}
+                              </p>
+                            </div>
                           </div>
-                          <div className="bg-[#0B0E11] rounded-lg p-3 border border-[#2B3139]">
-                            <p className="text-[#848E9C] text-[10px] uppercase mb-1">Closing Price</p>
-                            <p className={`font-mono font-bold text-sm ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
-                              ${Number(item.exitPrice || 0).toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Bottom Details */}
-                        <div className="flex items-center justify-between px-5 pb-4 text-xs text-[#848E9C]">
-                          <div className="flex gap-4">
-                            <span>💰 ${Number(item.amount || 0).toFixed(2)}</span>
-                            <span>⏱️ {item.duration || 60}s</span>
-                            <span>🎯 {item.payoutPercent || 30}%</span>
+                          {/* Entry -> Exit Price Row */}
+                          <div className="flex items-center justify-between bg-[#0B0E11] rounded-xl p-3 border border-[#2B3139]">
+                            <div className="flex-1 text-center">
+                              <p className="text-[10px] text-[#848E9C] uppercase">Entry Price</p>
+                              <p className="font-mono text-sm text-white font-medium">${Number(item.entryPrice || 0).toFixed(2)}</p>
+                            </div>
+                            <div className="px-4 text-[#848E9C] text-lg">→</div>
+                            <div className="flex-1 text-center">
+                              <p className="text-[10px] text-[#848E9C] uppercase">Closing Price</p>
+                              <p className={`font-mono text-sm font-medium ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                                ${Number(item.exitPrice || 0).toFixed(2)}
+                              </p>
+                            </div>
                           </div>
-                          <span className={`font-bold text-sm ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
-                            {item.profit || "$0.00"}
-                          </span>
-                        </div>
 
+                          {/* Time */}
+                          <p className="text-[10px] text-[#5E6673] text-right">{safeFormatDate(item.createdAt)}</p>
+                        </div>
                       </div>
                     )
                   })
