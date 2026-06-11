@@ -5,8 +5,6 @@ import {
   collection,
   onSnapshot,
   getDocs,
-  query,
-  where,
 } from "firebase/firestore"
 import { db } from "../lib/firebase"
 
@@ -61,14 +59,12 @@ export default function HistoryPage() {
 
     const loadHistory = async () => {
       try {
-        // Fetch Deposits
         const depositSnap = await getDocs(collection(db, "deposits"))
         const userDeposits = depositSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter((item: any) => item.email === user.email)
         if (isMounted) setDeposits(userDeposits)
 
-        // Fetch Withdrawals
         const withdrawSnap = await getDocs(collection(db, "withdrawals"))
         const userWithdraws = withdrawSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -80,7 +76,6 @@ export default function HistoryPage() {
       }
     }
 
-    // ✅ REAL-TIME TRADES LISTENER (Firebase)
     const q = collection(db, "trades")
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const userTrades = snapshot.docs
@@ -89,7 +84,7 @@ export default function HistoryPage() {
         .sort((a, b) => {
           const timeA = a.createdAt?.seconds || 0
           const timeB = b.createdAt?.seconds || 0
-          return timeB - timeA // Newest first
+          return timeB - timeA
         })
       
       if (isMounted) {
@@ -112,7 +107,7 @@ export default function HistoryPage() {
   return (
     <main className="min-h-screen bg-[#0B0E11] text-[#EAECEF] p-6 md:p-10">
       
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         
         {/* Header */}
         <div className="mb-8">
@@ -148,86 +143,92 @@ export default function HistoryPage() {
             <p className="font-semibold">Loading History...</p>
           </div>
         ) : (
-          <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-hidden shadow-xl">
+          <div className="space-y-4">
             
-            {/* ==================== TRADES TAB ==================== */}
+            {/* ==================== TRADES TAB (Premium Trade Receipts) ==================== */}
             {activeTab === "trades" && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-[#2B3139] bg-[#0B0E11]">
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Coin</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Duration</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Result</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Profit/Loss</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#2B3139]/50">
-                    {trades.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-16 text-[#5E6673]">
-                          <div className="flex flex-col items-center">
-                            <span className="text-4xl mb-3">📊</span>
-                            <p className="font-semibold text-[#848E9C]">No Trade History</p>
-                            <p className="text-sm mt-1">Start trading to see your results here</p>
+              <>
+                {trades.length === 0 ? (
+                  <div className="text-center py-16 bg-[#1E2329] rounded-xl border border-[#2B3139]">
+                    <span className="text-4xl mb-3 block">📊</span>
+                    <p className="font-semibold text-[#848E9C]">No Trade History</p>
+                    <p className="text-sm mt-1 text-[#5E6673]">Start trading to see your results here</p>
+                  </div>
+                ) : (
+                  trades.map((item) => {
+                    const isBuy = item.direction === "BUY"
+                    const isWin = item.adminResult === "WIN"
+                    
+                    return (
+                      // ✅ PREMIUM TRADE RECEIPT CARD (Real App Style)
+                      <div key={item.id} className={`bg-[#1E2329] border ${isWin ? 'border-[#0ECB81]/30' : 'border-[#F6465D]/30'} rounded-2xl overflow-hidden shadow-lg`}>
+                        
+                        {/* Top Bar */}
+                        <div className={`flex items-center justify-between px-5 py-3 ${isWin ? 'bg-[#0ECB81]/5' : 'bg-[#F6465D]/5'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold">{item.coin || "BTC/USDT"}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${isBuy ? 'bg-[#0ECB81]/20 text-[#0ECB81]' : 'bg-[#F6465D]/20 text-[#F6465D]'}`}>
+                              {isBuy ? "▲ BUY" : "▼ SELL"}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      trades.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#0B0E11]/50 transition-colors">
-                          <td className="px-6 py-5 font-bold text-white">{item.coin || "N/A"}</td>
-                          <td className="px-6 py-5 font-mono text-white font-semibold">${(Number(item.amount) || 0).toFixed(2)}</td>
-                          <td className="px-6 py-5 text-sm text-[#848E9C]">{item.duration || 60}s</td>
-                          <td className="px-6 py-5">
-                            <StatusBadge status={item.adminResult || "Pending"} />
-                          </td>
-                          <td className={`px-6 py-5 font-mono font-bold ${
-                            item.profit?.includes("+") ? "text-[#0ECB81]" : 
-                            item.profit?.includes("-") ? "text-[#F6465D]" : "text-[#848E9C]"
-                          }`}>
+                          <StatusBadge status={item.adminResult || "Pending"} />
+                        </div>
+
+                        {/* Prices Section (The Real Deal) */}
+                        <div className="grid grid-cols-2 gap-4 p-5">
+                          <div className="bg-[#0B0E11] rounded-lg p-3 border border-[#2B3139]">
+                            <p className="text-[#848E9C] text-[10px] uppercase mb-1">Entry Price</p>
+                            <p className="text-white font-mono font-bold text-sm">${Number(item.entryPrice || 0).toFixed(2)}</p>
+                          </div>
+                          <div className="bg-[#0B0E11] rounded-lg p-3 border border-[#2B3139]">
+                            <p className="text-[#848E9C] text-[10px] uppercase mb-1">Closing Price</p>
+                            <p className={`font-mono font-bold text-sm ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
+                              ${Number(item.exitPrice || 0).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Bottom Details */}
+                        <div className="flex items-center justify-between px-5 pb-4 text-xs text-[#848E9C]">
+                          <div className="flex gap-4">
+                            <span>💰 ${Number(item.amount || 0).toFixed(2)}</span>
+                            <span>⏱️ {item.duration || 60}s</span>
+                            <span>🎯 {item.payoutPercent || 30}%</span>
+                          </div>
+                          <span className={`font-bold text-sm ${isWin ? 'text-[#0ECB81]' : 'text-[#F6465D]'}`}>
                             {item.profit || "$0.00"}
-                          </td>
-                          <td className="px-6 py-5 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          </span>
+                        </div>
+
+                      </div>
+                    )
+                  })
+                )}
+              </>
             )}
 
             {/* ==================== DEPOSITS TAB ==================== */}
             {activeTab === "deposits" && (
-              <div className="overflow-x-auto">
+              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-[#2B3139] bg-[#0B0E11]">
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Coin</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Amount</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Coin</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Status</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2B3139]/50">
                     {deposits.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="text-center py-16 text-[#5E6673]">
-                          <div className="flex flex-col items-center">
-                            <span className="text-4xl mb-3">💵</span>
-                            <p className="font-semibold text-[#848E9C]">No Deposit History</p>
-                          </div>
-                        </td>
-                      </tr>
+                      <tr><td colSpan={4} className="text-center py-12 text-[#5E6673]">No Deposits Found</td></tr>
                     ) : (
                       deposits.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#0B0E11]/50 transition-colors">
-                          <td className="px-6 py-5 font-mono font-bold text-[#0ECB81]">${(Number(item.amount) || 0).toFixed(2)}</td>
-                          <td className="px-6 py-5 font-medium text-white">{item.coin || "USDT"}</td>
-                          <td className="px-6 py-5"><StatusBadge status={item.status} /></td>
-                          <td className="px-6 py-5 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>
+                        <tr key={item.id} className="hover:bg-[#0B0E11]/50">
+                          <td className="px-6 py-4 font-mono font-bold text-[#0ECB81]">${(Number(item.amount) || 0).toFixed(2)}</td>
+                          <td className="px-6 py-4 text-white">{item.coin || "USDT"}</td>
+                          <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
+                          <td className="px-6 py-4 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>
                         </tr>
                       ))
                     )}
@@ -238,31 +239,24 @@ export default function HistoryPage() {
 
             {/* ==================== WITHDRAWALS TAB ==================== */}
             {activeTab === "withdrawals" && (
-              <div className="overflow-x-auto">
+              <div className="bg-[#1E2329] rounded-xl border border-[#2B3139] overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-[#2B3139] bg-[#0B0E11]">
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Amount</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Status</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#848E9C] uppercase">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2B3139]/50">
                     {withdraws.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="text-center py-16 text-[#5E6673]">
-                          <div className="flex flex-col items-center">
-                            <span className="text-4xl mb-3">💸</span>
-                            <p className="font-semibold text-[#848E9C]">No Withdrawal History</p>
-                          </div>
-                        </td>
-                      </tr>
+                      <tr><td colSpan={3} className="text-center py-12 text-[#5E6673]">No Withdrawals Found</td></tr>
                     ) : (
                       withdraws.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#0B0E11]/50 transition-colors">
-                          <td className="px-6 py-5 font-mono font-bold text-[#F6465D]">${(Number(item.amount) || 0).toFixed(2)}</td>
-                          <td className="px-6 py-5"><StatusBadge status={item.status} /></td>
-                          <td className="px-6 py-5 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>
+                        <tr key={item.id} className="hover:bg-[#0B0E11]/50">
+                          <td className="px-6 py-4 font-mono font-bold text-[#F6465D]">${(Number(item.amount) || 0).toFixed(2)}</td>
+                          <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
+                          <td className="px-6 py-4 text-xs text-[#848E9C]">{safeFormatDate(item.createdAt)}</td>
                         </tr>
                       ))
                     )}
